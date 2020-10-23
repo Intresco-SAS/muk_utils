@@ -2,7 +2,7 @@
 #
 #    Copyright (c) 2017-2019 MuK IT GmbH.
 #
-#    This file is part of MuK Utils 
+#    This file is part of MuK Utils
 #    (see https://mukit.at).
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -27,37 +27,37 @@ import base64
 from odoo import models, fields, api
 from odoo.modules import module
 
+
 class ScssEditor(models.AbstractModel):
-    
     _name = 'muk_utils.scss_editor'
     _description = 'Scss Editor'
-    
-    #----------------------------------------------------------
+
+    # ----------------------------------------------------------
     # Helper
-    #----------------------------------------------------------
-    
+    # ----------------------------------------------------------
+
     def _build_custom_url(self, url_parts, xmlid):
         return "%s.custom.%s.%s" % (url_parts[0], xmlid, url_parts[1])
-    
+
     def _get_custom_url(self, url, xmlid):
         return self._build_custom_url(url.rsplit(".", 1), xmlid)
-    
+
     def _get_custom_attachment(self, url):
         return self.env["ir.attachment"].with_context(
             bin_size=False, bin_size_datas=False
         ).search([("url", '=', url)], limit=1)
-    
+
     def _get_custom_view(self, url):
         return self.env["ir.ui.view"].search([("name", '=', url)])
-    
+
     def _get_variable(self, content, variable):
         regex = r'{0}\:?\s(.*?);'.format(variable)
         value = re.search(regex, content)
         return value and value.group(1)
-    
+
     def _get_variables(self, content, variables):
         return {var: self._get_variable(content, var) for var in variables}
-    
+
     def _replace_variables(self, content, variables):
         for variable in variables:
             variable_content = '{0}: {1};'.format(
@@ -67,11 +67,11 @@ class ScssEditor(models.AbstractModel):
             regex = r'{0}\:?\s(.*?);'.format(variable['name'])
             content = re.sub(regex, variable_content, content)
         return content
-    
-    #----------------------------------------------------------
+
+    # ----------------------------------------------------------
     # Read
-    #----------------------------------------------------------
-    
+    # ----------------------------------------------------------
+
     def get_content(self, url, xmlid):
         custom_url = self._get_custom_url(url, xmlid)
         custom_attachment = self._get_custom_attachment(custom_url)
@@ -84,14 +84,14 @@ class ScssEditor(models.AbstractModel):
             module_resource_path = module.get_resource_path(module_path, resource_path)
             with open(module_resource_path, "rb") as file:
                 return file.read().decode('utf-8')
-    
+
     def get_values(self, url, xmlid, variables):
         return self._get_variables(self.get_content(url, xmlid), variables)
 
-    #----------------------------------------------------------
+    # ----------------------------------------------------------
     # Write
-    #----------------------------------------------------------
-    
+    # ----------------------------------------------------------
+
     def replace_content(self, url, xmlid, content):
         custom_url = self._get_custom_url(url, xmlid)
         custom_view = self._get_custom_view(custom_url)
@@ -105,7 +105,8 @@ class ScssEditor(models.AbstractModel):
                 'type': "binary",
                 'mimetype': "text/scss",
                 'datas': datas,
-                'datas_fname': url.split("/")[-1],
+                # TODO: old field datas_fname got removed, check if store_fname is correct and write migration
+                'store_fname': url.split("/")[-1],
                 'url': custom_url,
             })
         if not custom_view.exists():
@@ -132,13 +133,13 @@ class ScssEditor(models.AbstractModel):
                 }
             })
         self.env["ir.qweb"].clear_caches()
-        
+
     def replace_values(self, url, xmlid, variables):
         content = self._replace_variables(
             self.get_content(url, xmlid), variables
         )
         self.replace_content(url, xmlid, content)
-        
+
     def reset_values(self, url, xmlid):
         custom_url = self._get_custom_url(url, xmlid)
         self._get_custom_attachment(custom_url).unlink()

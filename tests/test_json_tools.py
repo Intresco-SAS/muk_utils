@@ -2,7 +2,7 @@
 #
 #    Copyright (c) 2017-2019 MuK IT GmbH.
 #
-#    This file is part of MuK Utils 
+#    This file is part of MuK Utils
 #    (see https://mukit.at).
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -20,36 +20,16 @@
 #
 ###################################################################################
 
+import json
 import logging
 
-from docutils import nodes
-from docutils.core import publish_string
-from docutils.transforms import Transform, writer_aux
-from docutils.writers.html4css1 import Writer
-
-from odoo import tools
+from odoo.addons.muk_utils.tools.json import RecordEncoder
+from odoo.tests import common
 
 _logger = logging.getLogger(__name__)
 
-class ReStructuredTextFilterMessages(Transform):
-    default_priority = 870
-    def apply(self):
-        for node in self.document.traverse(nodes.system_message):
-            node.parent.remove(node)
 
-class ReStructuredTextWriter(Writer):
-    def get_transforms(self):
-        return [ReStructuredTextFilterMessages, writer_aux.Admonitions]
-
-def rst2html(content):
-    overrides = {
-        'embed_stylesheet': False,
-        'doctitle_xform': False,
-        'output_encoding': 'unicode',
-        'xml_declaration': False,
-    }
-    output = publish_string(content, 
-        settings_overrides=overrides,
-        writer=ReStructuredTextWriter()
-    )
-    return tools.html_sanitize(output)
+class JsonTestCase(common.TransactionCase):
+    def test_json_dumps(self):
+        record = self.env["ir.attachment"].search_read([], limit=1)
+        json.dumps(record, sort_keys=True, indent=4, cls=RecordEncoder)
